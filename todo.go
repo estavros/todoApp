@@ -10,8 +10,9 @@ import (
 )
 
 type Task struct {
-	Done bool
-	Text string
+	Done    bool
+	Text    string
+	DueDate string // New field for due date
 }
 
 var tasks []Task
@@ -30,6 +31,7 @@ func main() {
 		fmt.Println("4. Delete Task")
 		fmt.Println("5. Exit")
 		fmt.Println("6. Export Tasks to JSON")
+		fmt.Println("7. Export Tasks to .toon file")
 		fmt.Print("Choose an option: ")
 
 		scanner.Scan()
@@ -39,8 +41,13 @@ func main() {
 		case "1":
 			fmt.Print("Enter task: ")
 			scanner.Scan()
-			task := scanner.Text()
-			tasks = append(tasks, Task{Done: false, Text: task})
+			taskText := scanner.Text()
+
+			fmt.Print("Enter due date (YYYY-MM-DD) or leave empty: ")
+			scanner.Scan()
+			dueDate := scanner.Text()
+
+			tasks = append(tasks, Task{Done: false, Text: taskText, DueDate: dueDate})
 			fmt.Println("Task added!")
 			saveTasks()
 
@@ -54,7 +61,11 @@ func main() {
 					if t.Done {
 						status = "[x]"
 					}
-					fmt.Printf("%d. %s %s\n", i+1, status, t.Text)
+					fmt.Printf("%d. %s %s", i+1, status, t.Text)
+					if t.DueDate != "" {
+						fmt.Printf(" (Due: %s)", t.DueDate)
+					}
+					fmt.Println()
 				}
 			}
 
@@ -89,8 +100,11 @@ func main() {
 			return
 
 		case "6":
-    		exportToJSON()
-			
+			exportToJSON()
+
+		case "7":
+			exportToToon()
+
 		default:
 			fmt.Println("Invalid choice.")
 		}
@@ -108,12 +122,12 @@ func loadTasks() {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parts := strings.SplitN(line, "|", 2)
-		if len(parts) != 2 {
+		parts := strings.SplitN(line, "|", 3) // now expecting 3 parts
+		if len(parts) != 3 {
 			continue
 		}
 		done := parts[0] == "1"
-		tasks = append(tasks, Task{Done: done, Text: parts[1]})
+		tasks = append(tasks, Task{Done: done, Text: parts[1], DueDate: parts[2]})
 	}
 }
 
@@ -131,29 +145,31 @@ func saveTasks() {
 		if t.Done {
 			doneFlag = "1"
 		}
-		file.WriteString(doneFlag + "|" + t.Text + "\n")
+		file.WriteString(doneFlag + "|" + t.Text + "|" + t.DueDate + "\n")
 	}
 }
 
+// Export tasks to JSON
 func exportToJSON() {
-    file, err := os.Create("tasks.json")
-    if err != nil {
-        fmt.Println("Error creating JSON file:", err)
-        return
-    }
-    defer file.Close()
+	file, err := os.Create("tasks.json")
+	if err != nil {
+		fmt.Println("Error creating JSON file:", err)
+		return
+	}
+	defer file.Close()
 
-    encoder := json.NewEncoder(file)
-    encoder.SetIndent("", "  ") // pretty print
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ") // pretty print
 
-    if err := encoder.Encode(tasks); err != nil {
-        fmt.Println("Error writing JSON:", err)
-        return
-    }
+	if err := encoder.Encode(tasks); err != nil {
+		fmt.Println("Error writing JSON:", err)
+		return
+	}
 
-    fmt.Println("Tasks exported to tasks.json!")
+	fmt.Println("Tasks exported to tasks.json!")
 }
 
+// Export tasks to .toon file
 func exportToToon() {
 	file, err := os.Create("tasks.toon")
 	if err != nil {
@@ -165,7 +181,7 @@ func exportToToon() {
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
-	writer.WriteString("TASKS:\n")
+	writer.WriteString("TASKS:\n\n")
 
 	for i, t := range tasks {
 		status := "pending"
@@ -174,13 +190,13 @@ func exportToToon() {
 		}
 
 		writer.WriteString(fmt.Sprintf(
-			"- id: %d\n  status: %s\n  text: %s\n\n",
+			"- id: %d\n  status: %s\n  text: %s\n  due: %s\n\n",
 			i+1,
 			status,
 			t.Text,
+			t.DueDate,
 		))
 	}
 
 	fmt.Println("Tasks exported to tasks.toon!")
 }
-
