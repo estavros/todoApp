@@ -7,13 +7,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Task struct {
 	Done     bool
 	Text     string
-	DueDate  string // Due date in YYYY-MM-DD format
-	Priority string // Priority: low, medium, high
+	DueDate  string // YYYY-MM-DD
+	Priority string // low, medium, high
 }
 
 var tasks []Task
@@ -52,7 +53,9 @@ func main() {
 			scanner.Scan()
 			priority := scanner.Text()
 
-			tasks = append(tasks, Task{Done: false, Text: taskText, DueDate: dueDate, Priority: priority})
+			tasks = append(tasks, Task{
+				Done: false, Text: taskText, DueDate: dueDate, Priority: priority,
+			})
 			fmt.Println("Task added!")
 			saveTasks()
 
@@ -66,13 +69,21 @@ func main() {
 					if t.Done {
 						status = "[x]"
 					}
+
 					fmt.Printf("%d. %s %s", i+1, status, t.Text)
+
 					if t.DueDate != "" {
 						fmt.Printf(" (Due: %s)", t.DueDate)
 					}
+
 					if t.Priority != "" {
 						fmt.Printf(" [Priority: %s]", t.Priority)
 					}
+
+					if isOverdue(t) {
+						fmt.Print(" ⚠ OVERDUE")
+					}
+
 					fmt.Println()
 				}
 			}
@@ -80,8 +91,7 @@ func main() {
 		case "3":
 			fmt.Print("Enter task number to mark completed: ")
 			scanner.Scan()
-			numStr := scanner.Text()
-			num, err := strconv.Atoi(numStr)
+			num, err := strconv.Atoi(scanner.Text())
 			if err != nil || num < 1 || num > len(tasks) {
 				fmt.Println("Invalid task number.")
 			} else {
@@ -93,8 +103,7 @@ func main() {
 		case "4":
 			fmt.Print("Enter task number to delete: ")
 			scanner.Scan()
-			numStr := scanner.Text()
-			num, err := strconv.Atoi(numStr)
+			num, err := strconv.Atoi(scanner.Text())
 			if err != nil || num < 1 || num > len(tasks) {
 				fmt.Println("Invalid task number.")
 			} else {
@@ -119,7 +128,22 @@ func main() {
 	}
 }
 
-// Load tasks from file
+func isOverdue(t Task) bool {
+	if t.Done || t.DueDate == "" {
+		return false
+	}
+
+	due, err := time.Parse("2006-01-02", t.DueDate)
+	if err != nil {
+		return false
+	}
+
+	today := time.Now().Truncate(24 * time.Hour)
+
+	return due.Before(today)
+}
+
+// Load tasks
 func loadTasks() {
 	file, err := os.Open(tasksFile)
 	if err != nil {
@@ -129,14 +153,13 @@ func loadTasks() {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.SplitN(line, "|", 4) // now expecting 4 parts
+		parts := strings.SplitN(scanner.Text(), "|", 4)
 		if len(parts) != 4 {
 			continue
 		}
-		done := parts[0] == "1"
+
 		tasks = append(tasks, Task{
-			Done:     done,
+			Done:     parts[0] == "1",
 			Text:     parts[1],
 			DueDate:  parts[2],
 			Priority: parts[3],
@@ -144,57 +167,53 @@ func loadTasks() {
 	}
 }
 
-// Save tasks to file
+// Save tasks
 func saveTasks() {
 	file, err := os.Create(tasksFile)
 	if err != nil {
-		fmt.Println("Error saving tasks:", err)
+		fmt.Println("Error saving:", err)
 		return
 	}
 	defer file.Close()
 
 	for _, t := range tasks {
-		doneFlag := "0"
+		done := "0"
 		if t.Done {
-			doneFlag = "1"
+			done = "1"
 		}
-		file.WriteString(doneFlag + "|" + t.Text + "|" + t.DueDate + "|" + t.Priority + "\n")
+		file.WriteString(done + "|" + t.Text + "|" + t.DueDate + "|" + t.Priority + "\n")
 	}
 }
 
-// Export tasks to JSON
+// Export JSON
 func exportToJSON() {
 	file, err := os.Create("tasks.json")
 	if err != nil {
-		fmt.Println("Error creating JSON file:", err)
+		fmt.Println("Error:", err)
 		return
 	}
 	defer file.Close()
 
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ") // pretty print
-
-	if err := encoder.Encode(tasks); err != nil {
-		fmt.Println("Error writing JSON:", err)
-		return
-	}
+	enc := json.NewEncoder(file)
+	enc.SetIndent("", "  ")
+	enc.Encode(tasks)
 
 	fmt.Println("Tasks exported to tasks.json!")
 }
 
-// Export tasks to .toon file
+// Export Toon
 func exportToToon() {
 	file, err := os.Create("tasks.toon")
 	if err != nil {
-		fmt.Println("Error creating Toon file:", err)
+		fmt.Println("Error:", err)
 		return
 	}
 	defer file.Close()
 
-	writer := bufio.NewWriter(file)
-	defer writer.Flush()
+	w := bufio.NewWriter(file)
+	defer w.Flush()
 
-	writer.WriteString("TASKS:\n\n")
+	w.WriteString("TASKS:\n\n")
 
 	for i, t := range tasks {
 		status := "pending"
@@ -202,13 +221,9 @@ func exportToToon() {
 			status = "done"
 		}
 
-		writer.WriteString(fmt.Sprintf(
+		w.WriteString(fmt.Sprintf(
 			"- id: %d\n  status: %s\n  text: %s\n  due: %s\n  priority: %s\n\n",
-			i+1,
-			status,
-			t.Text,
-			t.DueDate,
-			t.Priority,
+			i+1, status, t.Text, t.DueDate, t.Priority,
 		))
 	}
 
