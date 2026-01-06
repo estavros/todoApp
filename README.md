@@ -12,6 +12,8 @@ A simple command-line Todo application written in Go. It allows you to add, list
 * **Export tasks to Toon format (`tasks.toon`)** *(for LLM-friendly task discussion)*
 * Persistent storage using a `tasks.txt` file
 * Automatic overdue detection (⚠ overdue tasks are highlighted)
+* Filter tasks (overdue, due today, high priority, pending)
+* Sort tasks by due date
 
 ## How It Works
 
@@ -100,6 +102,7 @@ Todo App
 5. Exit
 6. Export Tasks to JSON
 7. Export Tasks to .toon file
+8. View filtered & sorted tasks
 Choose an option: 1
 Enter task: Buy groceries
 Enter due date (YYYY-MM-DD) or leave empty: 2025-12-20
