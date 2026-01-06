@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -34,12 +35,14 @@ func main() {
 		fmt.Println("5. Exit")
 		fmt.Println("6. Export Tasks to JSON")
 		fmt.Println("7. Export Tasks to .toon file")
+		fmt.Println("8. View filtered & sorted tasks")
 		fmt.Print("Choose an option: ")
 
 		scanner.Scan()
 		choice := scanner.Text()
 
 		switch choice {
+
 		case "1":
 			fmt.Print("Enter task: ")
 			scanner.Scan()
@@ -60,33 +63,7 @@ func main() {
 			saveTasks()
 
 		case "2":
-			fmt.Println("\nTasks:")
-			if len(tasks) == 0 {
-				fmt.Println("No tasks yet.")
-			} else {
-				for i, t := range tasks {
-					status := "[ ]"
-					if t.Done {
-						status = "[x]"
-					}
-
-					fmt.Printf("%d. %s %s", i+1, status, t.Text)
-
-					if t.DueDate != "" {
-						fmt.Printf(" (Due: %s)", t.DueDate)
-					}
-
-					if t.Priority != "" {
-						fmt.Printf(" [Priority: %s]", t.Priority)
-					}
-
-					if isOverdue(t) {
-						fmt.Print(" ⚠ OVERDUE")
-					}
-
-					fmt.Println()
-				}
-			}
+			printTasks(tasks)
 
 		case "3":
 			fmt.Print("Enter task number to mark completed: ")
@@ -122,9 +99,68 @@ func main() {
 		case "7":
 			exportToToon()
 
+		case "8":
+			filterMenu(scanner)
+
 		default:
 			fmt.Println("Invalid choice.")
 		}
+	}
+}
+
+func filterMenu(scanner *bufio.Scanner) {
+	fmt.Println("\nView:")
+	fmt.Println("1. Overdue")
+	fmt.Println("2. Due today")
+	fmt.Println("3. High priority")
+	fmt.Println("4. Pending only")
+	fmt.Println("5. Sorted by due date")
+	fmt.Print("Choose: ")
+
+	scanner.Scan()
+	choice := scanner.Text()
+
+	switch choice {
+	case "1":
+		printTasks(getOverdueTasks())
+	case "2":
+		printTasks(getDueToday())
+	case "3":
+		printTasks(getHighPriority())
+	case "4":
+		printTasks(getPendingTasks())
+	case "5":
+		printTasks(getSortedByDueDate())
+	default:
+		fmt.Println("Invalid choice.")
+	}
+}
+
+func printTasks(list []Task) {
+	if len(list) == 0 {
+		fmt.Println("No tasks.")
+		return
+	}
+
+	for i, t := range list {
+		status := "[ ]"
+		if t.Done {
+			status = "[x]"
+		}
+
+		fmt.Printf("%d. %s %s", i+1, status, t.Text)
+
+		if t.DueDate != "" {
+			fmt.Printf(" (Due: %s)", t.DueDate)
+		}
+		if t.Priority != "" {
+			fmt.Printf(" [Priority: %s]", t.Priority)
+		}
+		if isOverdue(t) {
+			fmt.Print(" ⚠ OVERDUE")
+		}
+
+		fmt.Println()
 	}
 }
 
@@ -132,18 +168,80 @@ func isOverdue(t Task) bool {
 	if t.Done || t.DueDate == "" {
 		return false
 	}
-
 	due, err := time.Parse("2006-01-02", t.DueDate)
 	if err != nil {
 		return false
 	}
-
 	today := time.Now().Truncate(24 * time.Hour)
-
 	return due.Before(today)
 }
 
-// Load tasks
+// FILTERS
+
+func getOverdueTasks() []Task {
+	var result []Task
+	for _, t := range tasks {
+		if isOverdue(t) {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+func getDueToday() []Task {
+	var result []Task
+	today := time.Now().Format("2006-01-02")
+	for _, t := range tasks {
+		if t.DueDate == today && !t.Done {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+func getHighPriority() []Task {
+	var result []Task
+	for _, t := range tasks {
+		if strings.ToLower(t.Priority) == "high" {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+func getPendingTasks() []Task {
+	var result []Task
+	for _, t := range tasks {
+		if !t.Done {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+func getSortedByDueDate() []Task {
+	sorted := make([]Task, len(tasks))
+	copy(sorted, tasks)
+
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].DueDate == "" {
+			return false
+		}
+		if sorted[j].DueDate == "" {
+			return true
+		}
+
+		di, _ := time.Parse("2006-01-02", sorted[i].DueDate)
+		dj, _ := time.Parse("2006-01-02", sorted[j].DueDate)
+
+		return di.Before(dj)
+	})
+
+	return sorted
+}
+
+// FILE HANDLING
+
 func loadTasks() {
 	file, err := os.Open(tasksFile)
 	if err != nil {
@@ -167,7 +265,6 @@ func loadTasks() {
 	}
 }
 
-// Save tasks
 func saveTasks() {
 	file, err := os.Create(tasksFile)
 	if err != nil {
@@ -185,7 +282,6 @@ func saveTasks() {
 	}
 }
 
-// Export JSON
 func exportToJSON() {
 	file, err := os.Create("tasks.json")
 	if err != nil {
@@ -201,7 +297,6 @@ func exportToJSON() {
 	fmt.Println("Tasks exported to tasks.json!")
 }
 
-// Export Toon
 func exportToToon() {
 	file, err := os.Create("tasks.toon")
 	if err != nil {
