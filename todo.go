@@ -21,8 +21,16 @@ type Task struct {
 var tasks []Task
 const tasksFile = "tasks.txt"
 
+const (
+	Red    = "\033[31m"
+	Yellow = "\033[33m"
+	Green  = "\033[32m"
+	Reset  = "\033[0m"
+)
+
 func main() {
 	loadTasks()
+	showStartupDashboard()
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -108,6 +116,35 @@ func main() {
 	}
 }
 
+// ---------- STARTUP DASHBOARD ----------
+
+func showStartupDashboard() {
+	overdue := getOverdueTasks()
+	today := getDueToday()
+
+	if len(overdue) == 0 && len(today) == 0 {
+		return
+	}
+
+	fmt.Println("\n==============================")
+	fmt.Println("📅  TODAY'S TASK ALERT")
+	fmt.Println("==============================")
+
+	if len(overdue) > 0 {
+		fmt.Println(Red + "🔥 OVERDUE:" + Reset)
+		printTasks(overdue)
+	}
+
+	if len(today) > 0 {
+		fmt.Println(Yellow + "⏰ DUE TODAY:" + Reset)
+		printTasks(today)
+	}
+
+	fmt.Println("==============================")
+}
+
+// ---------- FILTER MENU ----------
+
 func filterMenu(scanner *bufio.Scanner) {
 	fmt.Println("\nView:")
 	fmt.Println("1. Overdue")
@@ -157,7 +194,7 @@ func printTasks(list []Task) {
 			fmt.Printf(" [Priority: %s]", t.Priority)
 		}
 		if isOverdue(t) {
-			fmt.Print(" ⚠ OVERDUE")
+			fmt.Print(Red + " ⚠ OVERDUE" + Reset)
 		}
 
 		fmt.Println()
@@ -176,7 +213,7 @@ func isOverdue(t Task) bool {
 	return due.Before(today)
 }
 
-// FILTERS
+// ---------- FILTERS ----------
 
 func getOverdueTasks() []Task {
 	var result []Task
@@ -230,17 +267,15 @@ func getSortedByDueDate() []Task {
 		if sorted[j].DueDate == "" {
 			return true
 		}
-
 		di, _ := time.Parse("2006-01-02", sorted[i].DueDate)
 		dj, _ := time.Parse("2006-01-02", sorted[j].DueDate)
-
 		return di.Before(dj)
 	})
 
 	return sorted
 }
 
-// FILE HANDLING
+// ---------- FILE HANDLING ----------
 
 func loadTasks() {
 	file, err := os.Open(tasksFile)
