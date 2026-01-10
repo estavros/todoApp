@@ -36,6 +36,20 @@ You can export tasks into different formats:
 
 > Note: Toon export currently exists as an internal function and is not exposed in the menu yet. It is intended for future integration with an LLM chat interface.
 
+## Storage Format
+
+Tasks are stored in `tasks.txt` using this format:
+
+ID|Done|Text|DueDate|Priority
+
+Example:
+42|1|Pay rent|2025-12-01|high
+
+This makes it easy to:
+- Edit tasks manually
+- Sync with other tools
+- Write import/export scripts
+
 ## ⏰ Overdue Detection
 
 Tasks with a due date are automatically checked against the current date.
