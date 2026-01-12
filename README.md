@@ -17,6 +17,9 @@ A simple command-line Todo application written in Go. It allows you to add, list
   * ⏰ Tasks due today
 * Filter tasks (overdue, due today, high priority, pending)
 * Sort tasks by due date
+* Smart filtering & sorting
+* Filter by pending, completed, overdue, due today, or priority
+* Sort by due date or priority
 
 ## How It Works
 
