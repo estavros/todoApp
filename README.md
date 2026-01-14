@@ -15,11 +15,17 @@ A simple command-line Todo application written in Go. It allows you to add, list
 * **Startup reminder dashboard** showing:
   * 🔥 Overdue tasks
   * ⏰ Tasks due today
-* Filter tasks (overdue, due today, high priority, pending)
-* Sort tasks by due date
-* Smart filtering & sorting
-* Filter by pending, completed, overdue, due today, or priority
-* Sort by due date or priority
+* Filter tasks by:
+  * Pending
+  * Completed
+  * Overdue
+  * Due today
+  * Priority
+* Sort tasks by:
+  * ID
+  * Due date
+  * Priority
+* Smart filtering and sorting combined
 
 ## How It Works
 
