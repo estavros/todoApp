@@ -33,6 +33,7 @@ const (
 func main() {
 	loadTasks()
 	showStartupDashboard()
+	showReminders() // <- NEW: display overdue & today's tasks at startup
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -330,6 +331,35 @@ func exportToToon() {
 	fmt.Println("Tasks exported to tasks.toon!")
 }
 
+/* ---------------- STARTUP DASHBOARD ---------------- */
+
 func showStartupDashboard() {
 	fmt.Println(Green + "Loaded", len(tasks), "tasks." + Reset)
+}
+
+// ---------------- NEW: REMINDER SYSTEM ----------------
+func showReminders() {
+	today := time.Now().Format("2006-01-02")
+	hasReminders := false
+
+	for _, t := range tasks {
+		if !t.Done && t.DueDate != "" {
+			if t.DueDate == today {
+				if !hasReminders {
+					fmt.Println(Yellow + "\nTasks Due Today:" + Reset)
+					hasReminders = true
+				}
+				fmt.Printf("  #%d %s\n", t.ID, t.Text)
+			} else if isOverdue(t) {
+				if !hasReminders {
+					fmt.Println(Red + "\nOverdue Tasks:" + Reset)
+					hasReminders = true
+				}
+				fmt.Printf("  #%d %s (Due: %s)\n", t.ID, t.Text, t.DueDate)
+			}
+		}
+	}
+	if !hasReminders {
+		fmt.Println(Green + "No overdue or due today tasks." + Reset)
+	}
 }
