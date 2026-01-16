@@ -33,7 +33,7 @@ const (
 func main() {
 	loadTasks()
 	showStartupDashboard()
-	showReminders() // <- NEW: display overdue & today's tasks at startup
+	showReminders()
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -47,6 +47,7 @@ func main() {
 		fmt.Println("6. Export Tasks to JSON")
 		fmt.Println("7. Export Tasks to .toon file")
 		fmt.Println("8. View filtered & sorted tasks")
+		fmt.Println("9. Edit Task (by ID)")
 		fmt.Print("Choose an option: ")
 
 		scanner.Scan()
@@ -116,17 +117,56 @@ func main() {
 		case "8":
 			filterMenu(scanner)
 
+		case "9":
+			fmt.Print("Enter task ID to edit: ")
+			scanner.Scan()
+			id, _ := strconv.Atoi(scanner.Text())
+			if editTaskByID(id, scanner) {
+				saveTasks()
+				fmt.Println("Task updated!")
+			} else {
+				fmt.Println("Task not found.")
+			}
+
 		default:
 			fmt.Println("Invalid choice.")
 		}
 	}
 }
 
+/* ---------------- EDIT TASK ---------------- */
+
+func editTaskByID(id int, scanner *bufio.Scanner) bool {
+	for i := range tasks {
+		if tasks[i].ID == id {
+			fmt.Printf("Current text: %s\nNew text (leave empty to keep): ", tasks[i].Text)
+			scanner.Scan()
+			if input := scanner.Text(); input != "" {
+				tasks[i].Text = input
+			}
+
+			fmt.Printf("Current due date: %s\nNew due date (YYYY-MM-DD, empty to keep): ", tasks[i].DueDate)
+			scanner.Scan()
+			if input := scanner.Text(); input != "" {
+				tasks[i].DueDate = input
+			}
+
+			fmt.Printf("Current priority: %s\nNew priority (low/medium/high, empty to keep): ", tasks[i].Priority)
+			scanner.Scan()
+			if input := scanner.Text(); input != "" {
+				tasks[i].Priority = input
+			}
+
+			return true
+		}
+	}
+	return false
+}
+
 /* ---------------- FILTER SYSTEM ---------------- */
 
 func filterMenu(scanner *bufio.Scanner) {
 	filtered := make([]Task, 0)
-
 	fmt.Println("\nFilter:")
 	fmt.Println("1. All")
 	fmt.Println("2. Pending")
@@ -305,7 +345,8 @@ func saveTasks() {
 		if t.Done {
 			done = "1"
 		}
-		file.WriteString(fmt.Sprintf("%d|%s|%s|%s|%s\n", t.ID, done, t.Text, t.DueDate, t.Priority))
+		file.WriteString(fmt.Sprintf("%d|%s|%s|%s|%s\n",
+			t.ID, done, t.Text, t.DueDate, t.Priority))
 	}
 }
 
@@ -325,7 +366,8 @@ func exportToToon() {
 		if t.Done {
 			status = "done"
 		}
-		fmt.Fprintf(file, "- id: %d\n  status: %s\n  text: %s\n  due: %s\n  priority: %s\n\n",
+		fmt.Fprintf(file,
+			"- id: %d\n  status: %s\n  text: %s\n  due: %s\n  priority: %s\n\n",
 			t.ID, status, t.Text, t.DueDate, t.Priority)
 	}
 	fmt.Println("Tasks exported to tasks.toon!")
@@ -337,7 +379,6 @@ func showStartupDashboard() {
 	fmt.Println(Green + "Loaded", len(tasks), "tasks." + Reset)
 }
 
-// ---------------- NEW: REMINDER SYSTEM ----------------
 func showReminders() {
 	today := time.Now().Format("2006-01-02")
 	hasReminders := false
