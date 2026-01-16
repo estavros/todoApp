@@ -4,29 +4,34 @@ A simple command-line Todo application written in Go. It allows you to add, list
 
 ## Features
 
-* Add new tasks
-* View all existing tasks
-* Mark tasks as completed
-* Delete tasks by number
-* **Export tasks to JSON (`tasks.json`)**
-* **Export tasks to Toon format (`tasks.toon`)** *(for LLM-friendly task discussion)*
-* Persistent storage using a `tasks.txt` file
-* Automatic overdue detection (⚠ overdue tasks are highlighted)
-* **Startup reminder dashboard** showing:
+* Add new tasks with optional **due dates** and **priorities**
+* View all existing tasks with clear status indicators
+* Mark tasks as completed by ID
+* Delete tasks by ID
+* Edit existing tasks (text, due date, priority)
+* Persistent storage using a simple `tasks.txt` file
+* Automatic **overdue detection** with visual warnings (⚠)
+* **Startup reminder dashboard** displaying:
   * 🔥 Overdue tasks
   * ⏰ Tasks due today
 * Filter tasks by:
+  * All
   * Pending
   * Completed
   * Overdue
   * Due today
   * Priority
-* Sort tasks by:
+* Sort filtered tasks by:
   * ID
   * Due date
   * Priority
-* Smart filtering and sorting combined
+* Combined filtering and sorting for flexible task views
+* Export tasks to:
+  * **JSON (`tasks.json`)** for machine-readable use
+  * **Toon format (`tasks.toon`)** for human- and LLM-friendly task discussion
+* Color-coded task display for improved readability
 
+  
 ## How It Works
 
 The application stores tasks in memory and writes them into `tasks.txt` so they are available the next time you run the program. When the application starts, it loads tasks from the file (if it exists).
